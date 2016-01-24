@@ -1,0 +1,6 @@
+# Dependency directory
+node_modules
+
+# Content and Upload Directory
+uploads
+content
