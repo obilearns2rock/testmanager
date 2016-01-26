@@ -84,6 +84,9 @@ exports.handle = function(req, res, next){
 					next();
 				}
 			})		
-			break;	
+			break;
+		default:
+				next();
+			break;
 	}
 }

@@ -10,53 +10,30 @@ exports.handle = function(req, res, next){
 	console.log(requestedPath);
 	switch(req.method){
 		case 'GET':					
-			fs.readFile(requestedPath, "utf8", function(err, data){
-				if(!err){					
-					var jsonData = JSON.parse(data);
-					console.log(jsonData);
-					console.log(req.params);
-					if(_.has(jsonData, req.params.cat))	{
-						var result = {};
-						var questn = _.find(jsonData[req.params.cat], function(i){
-							return _.has(i, "question");
-						});
-						console.log(questn);
-						result.type = questn ? "content" : "sub-categories";
-						result.data = questn ? jsonData[req.params.cat] : _.keys(jsonData[req.params.cat]);
-						res.json(result);
-					}				
-				}else{
-					next();
-				}
-			})
+			req.sendSubCategoryList(req, res, next);
 			break;	
 		case 'PUT':
 			fs.readFile(requestedPath, function(err, data){
 				if(!err){
-					var jsonData = JSON.parse(data);
-					console.log(jsonData);
-					var result = {status: 0};
+					var result = {code: 1};
+					var jsonData = JSON.parse(data);									
 					var cat = req.params.cat;
 					var subcat = req.body.name.toLowerCase();
 					var check1 = _.has(jsonData, cat);						
 					if(check1 && !_.has(jsonData[cat], subcat)){
-						jsonData[cat][subcat] = [];
-						result.status = 1;
-						result.message = "success";
-					}else if(!check1){
-						result.message = "category does not exist";
+						jsonData[cat][subcat] = [];			
+						result.code = 0;
+						result.message = "success";			
 					}else{
-						result.message = "sub-category exists already";
+						result.message = "category does not exist or sub category duplicate";
 					}
-					fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
-						if(!err){
-							res.json(result);
-						}else{
-							result.status = 0;
-							result.message = "create error";
-							res.json(result);
-						}
-					})
+					if(result.code == 0){
+						fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
+							req.sendSubCategoryList(req, res, next, result);
+						})
+					}else{
+						req.sendSubCategoryList(req, res, next, result);
+					}
 				}else{
 					next();
 				}
@@ -65,34 +42,27 @@ exports.handle = function(req, res, next){
 		case 'POST':
 			fs.readFile(requestedPath, function(err, data){
 				if(!err){
+					var result = {code: 1};
 					var jsonData = JSON.parse(data);
 					var cat = req.params.cat;
-					var prop = req.body.name.toLowerCase();	
-					console.log(jsonData);
-					var result = {status: 0};
-					if(_.has(jsonData, cat)){
+					var prop = req.body.name.toLowerCase();											
+					if(_.has(jsonData, cat) && !_.has(jsonData, prop) && prop != cat){
 						jsonData[prop] = jsonData[cat];
 						delete jsonData[cat];
 						var newResourceKey = "$" + prop;
 						jsonData[newResourceKey] = jsonData[resourceKey];
-						delete jsonData[resourceKey];
-						result.status = 1;
-						result.message = "success";
+						delete jsonData[resourceKey];		
+						result.code = 0;
+						result.message = "success";				
 					}else{
-						result.message = "category does not exist";
+						result.message = "category does not exist or category duplicate";
 					}
-					if(result.status == 1){
+					if(result.code == 0){
 						fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
-							if(!err){
-								res.json(result);
-							}else{
-								result.status = 0;
-								result.message = "create error";
-								res.json(result);
-							}
-						})		
+							req.sendCategoryList(req, res, next, result);
+						})
 					}else{
-						res.json(result);
+						req.sendCategoryList(req, res, next, result);
 					}
 				}else{
 					next();
@@ -102,33 +72,30 @@ exports.handle = function(req, res, next){
 		case 'DELETE':
 			fs.readFile(requestedPath, function(err, data){
 				if(!err){
+					var result = {code: 1};
 					var jsonData = JSON.parse(data);
 					var cat = req.params.cat;					
-					var result = {status: 0};
 					if(_.has(jsonData, cat)){							
-						delete jsonData[cat];
-						result.status = 1;
-						result.message = "success";
+						delete jsonData[cat];	
+						result.code = 0;
+						result.message = "success";					
 					}else{
 						result.message = "category does not exist";
 					}
-					if(result.status == 1){
+					if(result.code == 0){
 						fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
-							if(!err){
-								res.json(result);
-							}else{
-								result.status = 0;
-								result.message = "create error";
-								res.json(result);
-							}
-						})		
+							req.sendCategoryList(req, res, next, result);
+						})
 					}else{
-						res.json(result);
-					}
+						req.sendCategoryList(req, res, next, result);
+					}	
 				}else{
 					next();
 				}
 			})
+			break;
+		default:
+				next();
 			break;
 	}	
 }

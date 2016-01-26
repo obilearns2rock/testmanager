@@ -6,46 +6,33 @@ exports.handle = function(req, res, next){
 	var parts = _.values(req.params);			
 	var jsonPath = parts.splice(3);
 	var requestedPath = path.join(req.packageFolder, parts.join(path.sep));
+	var resourcePath = path.join(req.packageFolder, req.params.package, req.params.branch, '_' + req.params.pool);
 	console.log(requestedPath);
 	switch(req.method){
 		case 'GET':								
-			fs.readFile(requestedPath, "utf8", function(err, data){
-				if(!err){					
-					var jsonData = JSON.parse(data);
-					var result = {
-						type: "categories",
-						data: _.reject(_.keys(jsonData), function(key){
-							return key.startsWith("$");
-						})
-					};	
-					res.json(result);					
-				}
-			})
+			req.sendCategoryList(req, res, next);
 			break;
 		case 'PUT':			
 			fs.readFile(requestedPath, function(err, data){
 				if(!err){
+					var result = {code: 1};
 					var prop = req.body.name.toLowerCase();
-					var jsonData = JSON.parse(data);
-					console.log(jsonData);
-					var result = {status: 0};
+					var jsonData = JSON.parse(data);					
 					if(!_.has(jsonData, prop)){
-						jsonData[prop] = {};
-						result.status = 1;
-						result.message = "success";
+						jsonData[prop] = {};	
+						result.code = 0;
+						result.message = "success";					
 					}else{
-						result.message = "category exists already";
+						result.message = "duplicate category";
 					}
 
-					fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
-						if(!err){
-							res.json(result);
-						}else{
-							result.status = 0;
-							result.message = "create error";
-							res.json(result);
-						}
-					})	
+					if(result.code == 0){
+						fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
+							req.sendCategoryList(req, res, next, result);
+						})
+					}else{
+						req.sendCategoryList(req, res, next, result);
+					}		
 				}else{
 					next();
 				}
@@ -53,42 +40,30 @@ exports.handle = function(req, res, next){
 			break;
 		case 'POST':
 			var name = req.body.name.toLowerCase();			
-			fs.exists(requestedPath, function(exists){
-				if(exists && name){
-					parts.pop();
-					var newPath = path.join(req.packageFolder, parts.join(path.sep), name);
-					var resPath = path.join(req.packageFolder, parts.join(path.sep), '_' + req.params.pool);
-					var newResPath = path.join(req.packageFolder, parts.join(path.sep), '_' + name);
-					fs.rename(requestedPath, newPath, function(err){
-						if(!err){
-							fs.rename(resPath, newResPath, function(err){
-								var result = { status: err ? 0 : 1};							
-								result.message = err ? err : "success";
-								res.json(result);
-							})
-						}else{
-							var result = { status: 0};							
-							result.message = err;
-							res.json(result);
-						}						
-					});
-				}else{
-					next();
-				}			
-			});
+			if(name){
+				parts.pop();
+				var newPath = path.join(req.packageFolder, parts.join(path.sep), name);				
+				var newResPath = path.join(req.packageFolder, parts.join(path.sep), '_' + name);
+				fs.rename(requestedPath, newPath, function(err){					
+					fs.rename(resourcePath, newResPath, function(err){
+						req.sendPoolList(req, res, next);
+					})				
+				});
+			}else{
+				req.sendPoolList(req, res, next);
+			}	
 			break;
 		case 'DELETE':			
-			fs.exists(requestedPath, function(exists){
-				if(exists){				
-					fs.unlink(requestedPath, function(err){
-						var result = { status: err ? 0 : 1};							
-						result.message = err ? err : "success";
-						res.json(result);
-					});
-				}else{
-					next();
-				}			
+			fs.unlink(requestedPath, function(err){
+				var fsExtra = require("fs.extra");
+				console.log(resourcePath);
+				fsExtra.rmrf(resourcePath, function(err){				
+					req.sendPoolList(req, res, next);
+				});				
 			});
+			break;
+		default:
+				next();
 			break;
 	}
 }

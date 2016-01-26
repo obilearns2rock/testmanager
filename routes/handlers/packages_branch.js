@@ -8,70 +8,43 @@ exports.handle = function(req, res, next){
 	console.log(requestedPath);
 	switch(req.method){
 		case 'GET':				
-			fs.readdir(requestedPath, function(err, files){
-				if(!err){					
-					var result = {
-						type: "pools",
-						data: _.reject(files, function(file){
-							return file.startsWith('_');
-						})
-					};					
-					res.json(result);
-				}else{
-					next();
-				}
-			})
+			req.sendPoolList(req, res, next);
 			break;	
 		case 'PUT':
 			var pool = req.body.name.toLowerCase();			
-			var pth = path.join(req.packageFolder, parts.join(path.sep), pool);
-			var resPath = path.join(req.packageFolder, parts.join(path.sep), '_' + pool);
-			fs.exists(pth, function(exists){
-				if(!exists){
-					fs.writeFile(pth, "{}", function(err){
-						var result = { status: err ? 0 : 1};							
-						result.message = err ? "failed" : "success";
-						fs.mkdir(resPath, function(err){
-							result = { status: err ? 0 : 1};							
-							result.message = err ? "failed" : "success";
-							res.json(result);
-						})							
-					});						
-				}else{
-					var result = { status: 0}	
-					result.message = "pool already exists";
-					res.json(result);
-				}				
-			})
+			var pth = path.join(requestedPath, pool);
+			var resPath = path.join(requestedPath, '_' + pool);
+			if(pool){
+				fs.writeFile(pth, "{}", function(err){					
+					fs.mkdir(resPath, function(err){
+						req.sendPoolList(req, res, next);
+					})							
+				});
+			}else{
+				req.sendPoolList(req, res, next);
+			}
 			break;
 		case 'POST':
 			var name = req.body.name.toLowerCase();
-			fs.exists(requestedPath, function(exists){
-				if(exists && name){
-					parts.pop();
-					var newPath = path.join(req.packageFolder, parts.join(path.sep), name);
-					fs.rename(requestedPath, newPath, function(err){
-						var result = { status: err ? 0 : 1};							
-						result.message = err ? err : "success";
-						res.json(result);
-					});
-				}else{
-					next();
-				}			
-			});
+			if(name){
+				parts.pop();
+				var newPath = path.join(req.packageFolder, parts.join(path.sep), name);
+				var mv = require("mv");
+				mv(requestedPath, newPath, {mkdirp: true}, function(err){
+					req.sendBranchList(req, res, next);
+				});
+			}else{
+				req.sendBranchList(req, res, next);
+			}
 			break;
 		case 'DELETE':			
-			fs.exists(requestedPath, function(exists){
-				if(exists){				
-					fs.unlink(requestedPath, function(err){
-						var result = { status: err ? 0 : 1};							
-						result.message = err ? err : "success";
-						res.json(result);
-					});
-				}else{
-					next();
-				}			
+			var fsExtra = require("fs.extra");
+			fsExtra.rmrf(requestedPath, function(err){
+				req.sendBranchList(req, res, next);
 			});
+			break;
+		default:
+				next();
 			break;
 	}
 }

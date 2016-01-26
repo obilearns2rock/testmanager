@@ -13,57 +13,41 @@ exports.handle = function(req, res, next){
 
 	switch(req.method){
 		case 'GET':					
-			fs.readFile(requestedPath, "utf8", function(err, data){
-				if(!err){					
-					var jsonData = JSON.parse(data);					
-					if(_.has(jsonData, cat) && _.has(jsonData[cat], subcat)){
-						var result = {		
-							type: "content",					
-							data: jsonData[cat][subcat]
-						};						
-						res.json(result);
-					}else{
-						next();
-					}			
-				}else{
-					next();
-				}
-			})
+			req.sendContentList(req, res, next);
 			break;		
 		case 'PUT':
 			fs.readFile(requestedPath, function(err, data){
 				if(!err){
 					var jsonData = JSON.parse(data);					
-					var result = {status: 0};					
+					var result = {code: 1};					
 					var content = req.body.content;
 					try{
 						content = JSON.parse(content);
 					}catch(e){
 						result.message = "bad data";		
-						res.json(result);				
+						req.sendContentList(req, res, next, result);
+						return;				
 					}
 					var check1 = _.has(jsonData, cat);		
 					var check2 = check1 ? _.has(jsonData[cat], subcat) : false;		
 					if(check1 && check2){
 						if(_.has(content, "question")){
 							jsonData[cat][subcat].push(content);
-							result.status = 1;
-							result.message = "success";
+							result.code = 0;
+							result.message = "success";							
 						}else{									
 							result.message = "only question data allowed at this level";
 						}								
 					}else{
 						result.message = "category or sub-category does not exist";
 					}
-					fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
-						if(!err){
-							res.json(result);
-						}else{
-							result.status = 0;
-							result.message = "create error";
-							res.json(result);
-						}
-					})
+					if(result.code == 0){
+						fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
+							req.sendContentList(req, res, next, result);
+						})
+					}else{
+						req.sendContentList(req, res, next, result);
+					}
 				}else{
 					next();
 				}
@@ -74,32 +58,26 @@ exports.handle = function(req, res, next){
 				if(!err){
 					var jsonData = JSON.parse(data);				
 					var prop = req.body.name.toLowerCase();						
-					var result = {status: 0};
+					var result = {code: 1};
 					var check1 = _.has(jsonData, cat);
-					var check2 = check1 ? _.has(jsonData[cat], subcat) : false;
+					var check2 = check1 ? _.has(jsonData[cat], subcat) && !_.has(jsonData[cat], prop) && prop != subcat : false;
 					if(check1 && check2){
 						jsonData[cat][prop] = jsonData[cat][subcat];
 						delete jsonData[cat][subcat];
 						var newResourceKey = "$" + cat + "$" + prop;
 						jsonData[newResourceKey] = jsonData[resourceKey];
 						delete jsonData[resourceKey];
-						result.status = 1;
+						result.code = 0;
 						result.message = "success";
 					}else{
-						result.message = "sub-category does not exist";
+						result.message = "sub-category does not exist or duplicate name";
 					}
-					if(result.status == 1){
+					if(result.code == 0){
 						fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
-							if(!err){
-								res.json(result);
-							}else{
-								result.status = 0;
-								result.message = "create error";
-								res.json(result);
-							}
+							req.sendSubCategoryList(req, res, next, result);		
 						})		
 					}else{
-						res.json(result);
+						req.sendSubCategoryList(req, res, next, result);
 					}
 				}else{
 					next();
@@ -110,33 +88,30 @@ exports.handle = function(req, res, next){
 			fs.readFile(requestedPath, function(err, data){
 				if(!err){
 					var jsonData = JSON.parse(data);									
-					var result = {status: 0};
+					var result = {code: 1};
 					var check1 = _.has(jsonData, cat);
 					var check2 = check1 ? _.has(jsonData[cat], subcat) : false;
 					if(check1 && check2){							
 						delete jsonData[cat][subcat];
-						result.status = 1;
+						result.code = 0;
 						result.message = "success";
 					}else{
 						result.message = "sub-category does not exist";
 					}
-					if(result.status == 1){
+					if(result.code == 0){
 						fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
-							if(!err){
-								res.json(result);
-							}else{
-								result.status = 0;
-								result.message = "create error";
-								res.json(result);
-							}
+							req.sendSubCategoryList(req, res, next, result);		
 						})		
 					}else{
-						res.json(result);
+						req.sendSubCategoryList(req, res, next, result);		
 					}
 				}else{
 					next();
 				}
 			})
+			break;
+		default:
+				next();
 			break;
 	}	
 }

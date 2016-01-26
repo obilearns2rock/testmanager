@@ -45,6 +45,9 @@ exports.handle = function(req, res, next){
 					res.json(err);
 				}
 			})
-			break;	
+			break;
+		default:
+				next();
+			break;
 	}
 }

@@ -1,4 +1,4 @@
-	var express = require("express");
+var express = require("express");
 var logger = require("morgan");
 var bodyParser = require("body-parser");
 var path = require("path");
@@ -13,8 +13,7 @@ var app = express();
 // add cors header
 app.use(function(req, res, next) {
   	res.header("Access-Control-Allow-Origin", "*");
-  	res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  	// res.setHeader('content-type', 'application/json');  	
+  	res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");  	 	
   	next();
 });
 
@@ -41,7 +40,7 @@ app.all('/packages/:package/:branch', packages.branch);
 app.all('/packages/:package/:branch/:pool', packages.pool);
 app.all('/packages/:package/:branch/:pool/:cat', packages.category);
 app.all('/packages/:package/:branch/:pool/:cat/:subcat', packages.subcategory);
-app.all('/packages/:package/:branch/:pool/:cat/:subcat/:index', packages.content);
+app.all('/packages/:package/:branch/:pool/:cat/:subcat/:id', packages.content);
 
 /**
 *Resource end point

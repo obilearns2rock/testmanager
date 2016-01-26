@@ -8,67 +8,40 @@ exports.handle = function(req, res, next){
 	console.log(requestedPath);
 	switch(req.method){
 		case 'GET':				
-			fs.readdir(requestedPath, function(err, files){
-				if(!err){					
-					var result = {
-						type: "branches",
-						data: files
-					};					
-					res.json(result);
-				}else{
-					next();
-				}
-			})
+			req.sendBranchList(req, res, next);
 			break;
 		case 'PUT':
 			var branch = req.body.name.toLowerCase();
 			var pth = path.join(req.packageFolder, parts.join(path.sep), branch);
-			fs.exists(pth, function(exists){
-				if(!exists){
-					fs.mkdir(pth, function(err){
-						if(!err){
-							var result = { status: 1};							
-							result.message = "success";
-							res.json(result);
-						}else{
-							next();
-						}
-					});
-				}else{
-					var result = { status: 0}	
-					result.message = "branch already exists";
-					res.json(result);
-				}				
-			})
+			if(branch){
+				fs.mkdir(pth, function(err){
+					req.sendBranchList(req, res, next);
+				});
+			}else{
+				req.sendBranchList(req, res, next);
+			}
 			break;	
 		case 'POST':
 			var name = req.body.name.toLowerCase();
-			fs.exists(requestedPath, function(exists){
-				if(exists && name){
-					parts.pop();
-					var newPath = path.join(req.packageFolder, parts.join(path.sep), name);
-					fs.rename(requestedPath, newPath, function(err){
-						var result = { status: err ? 0 : 1};							
-						result.message = err ? err : "success";
-						res.json(result);
-					});
-				}else{
-					next();
-				}			
-			});
+			if(name){
+				parts.pop();
+				var newPath = path.join(req.packageFolder, parts.join(path.sep), name);
+				var mv = require("mv");
+				mv(requestedPath, newPath, {mkdirp: true}, function(err){
+					req.sendPackageList(req, res, next);
+				});
+			}else{
+				req.sendPackageList(req, res, next);
+			}
 			break;
 		case 'DELETE':			
-			fs.exists(requestedPath, function(exists){
-				if(exists){				
-					fs.unlink(requestedPath, function(err){
-						var result = { status: err ? 0 : 1};							
-						result.message = err ? err : "success";
-						res.json(result);
-					});
-				}else{
-					next();
-				}			
+			var fsExtra = require("fs.extra");
+			fsExtra.rmrf(requestedPath, function(err){				
+				req.sendPackageList(req, res, next);
 			});
+			break;
+		default:
+				next();
 			break;
 	}
 }

@@ -9,61 +9,43 @@ exports.handle = function(req, res, next){
 	console.log(requestedPath);
 	var cat = req.params.cat;
 	var subcat = req.params.subcat;
-	var index = req.params.index;
+	var id = req.params.id;
 
 	switch(req.method){
 		case 'GET':					
-			fs.readFile(requestedPath, "utf8", function(err, data){
-				if(!err){					
-					var jsonData = JSON.parse(data);					
-					if(_.has(jsonData, cat) && _.has(jsonData[cat], subcat)){
-						var result = {		
-							type: "content",					
-							data: jsonData[cat][subcat]
-						};						
-						res.json(result);
-					}				
-				}else{
-					next();
-				}
-			})
+			req.sendContent(req, res, next);
 			break;		
 		case 'POST':
 			fs.readFile(requestedPath, function(err, data){
 				if(!err){
-					var result = {status: 0};
+					var result = {code: 1};
 					var content = {};
 					try{
 						content = JSON.parse(req.body.content);
 					}catch(e){
 						result.message = "bad data";	
-						res.json(result);					
+						req.sendContent(req, res, next, result);
+						return;				
 					}
 					var jsonData = JSON.parse(data);																	
 					var check1 = _.has(jsonData, cat);
 					var check2 = check1 ? _.has(jsonData[cat], subcat) : false;
-					var check3 = check2 ? _.has(jsonData[cat][subcat], index) : false;
-					if(check1 && check2 && check3 && !isNaN(index)){
+					var check3 = check2 ? _.has(jsonData[cat][subcat], id) : false;
+					if(check1 && check2 && check3 && !isNaN(id)){
 						if(_.has(content, "question")){
-							jsonData[cat][subcat][index] = content;
-							result.status = 1;
+							jsonData[cat][subcat][id] = content;
+							result.code = 0;
 							result.message = "success";
 						}else{									
 							result.message = "only question data allowed at this level";
 						}								
 					}
-					if(result.status == 1){
+					if(result.code == 0){
 						fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
-							if(!err){
-								res.json(result);
-							}else{
-								result.status = 0;
-								result.message = "create error";
-								res.json(result);
-							}
+							req.sendContent(req, res, next, result);
 						})		
 					}else{
-						res.json(result);
+						req.sendContent(req, res, next, result);
 					}
 				}else{
 					next();
@@ -74,35 +56,31 @@ exports.handle = function(req, res, next){
 			fs.readFile(requestedPath, function(err, data){
 				if(!err){
 					var jsonData = JSON.parse(data);									
-					var result = {status: 0};
+					var result = {code: 1};
 					var check1 = _.has(jsonData, cat);
 					var check2 = check1 ? _.has(jsonData[cat], subcat) : false;				
-					var check3 = check2 ? _.has(jsonData[cat][subcat], index) : false;
-					if(check1 && check2 && check3 && !isNaN(index)){
+					var check3 = check2 ? _.has(jsonData[cat][subcat], id) : false;
+					if(check1 && check2 && check3 && !isNaN(id)){
 						var qarray = jsonData[cat][subcat];						
-						jsonData[cat][subcat].splice(index, 1);
-						result.status = 1;
+						jsonData[cat][subcat].splice(id, 1);
+						result.code = 0;
 						result.message = "success";						
-					}else{
-						next();
 					}
-					if(result.status == 1){
+
+					if(result.code == 0){
 						fs.writeFile(requestedPath, JSON.stringify(jsonData), function(err){
-							if(!err){
-								res.json(result);
-							}else{
-								result.status = 0;
-								result.message = "create error";
-								res.json(result);
-							}
+							req.sendContentList(req, res, next, result);
 						})		
 					}else{
-						res.json(result);
+						req.sendContentList(req, res, next, result);
 					}
 				}else{
 					next();
 				}
 			})
+			break;
+		default:
+				next();
 			break;
 	}	
 }
