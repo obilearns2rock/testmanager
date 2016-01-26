@@ -6,6 +6,7 @@ exports.handle = function(req, res, next){
 	var parts = _.values(req.params);			
 	var jsonPath = parts.splice(3);
 	var requestedPath = path.join(req.packageFolder, parts.join(path.sep));
+	var resourceKey = "$" + req.params.cat + "$" + req.params.subcat;
 	console.log(requestedPath);
 	var cat = req.params.cat;
 	var subcat = req.params.subcat;
@@ -79,6 +80,9 @@ exports.handle = function(req, res, next){
 					if(check1 && check2){
 						jsonData[cat][prop] = jsonData[cat][subcat];
 						delete jsonData[cat][subcat];
+						var newResourceKey = "$" + cat + "$" + prop;
+						jsonData[newResourceKey] = jsonData[resourceKey];
+						delete jsonData[resourceKey];
 						result.status = 1;
 						result.message = "success";
 					}else{

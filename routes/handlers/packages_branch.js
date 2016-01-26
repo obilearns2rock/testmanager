@@ -12,7 +12,9 @@ exports.handle = function(req, res, next){
 				if(!err){					
 					var result = {
 						type: "pools",
-						data: files
+						data: _.reject(files, function(file){
+							return file.startsWith('_');
+						})
 					};					
 					res.json(result);
 				}else{

@@ -6,6 +6,7 @@ exports.handle = function(req, res, next){
 	var parts = _.values(req.params);			
 	var jsonPath = parts.splice(3);
 	var requestedPath = path.join(req.packageFolder, parts.join(path.sep));
+	var resourceKey = "$" + req.params.cat;
 	console.log(requestedPath);
 	switch(req.method){
 		case 'GET':					
@@ -72,6 +73,9 @@ exports.handle = function(req, res, next){
 					if(_.has(jsonData, cat)){
 						jsonData[prop] = jsonData[cat];
 						delete jsonData[cat];
+						var newResourceKey = "$" + prop;
+						jsonData[newResourceKey] = jsonData[resourceKey];
+						delete jsonData[resourceKey];
 						result.status = 1;
 						result.message = "success";
 					}else{

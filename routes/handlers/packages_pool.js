@@ -14,7 +14,9 @@ exports.handle = function(req, res, next){
 					var jsonData = JSON.parse(data);
 					var result = {
 						type: "categories",
-						data: _.keys(jsonData)
+						data: _.reject(_.keys(jsonData), function(key){
+							return key.startsWith("$");
+						})
 					};	
 					res.json(result);					
 				}
