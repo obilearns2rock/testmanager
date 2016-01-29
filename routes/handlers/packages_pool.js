@@ -46,7 +46,7 @@ exports.handle = function(req, res, next){
 				var newResPath = path.join(req.packageFolder, parts.join(path.sep), '_' + name);
 				fs.rename(requestedPath, newPath, function(err){					
 					fs.rename(resourcePath, newResPath, function(err){
-						req.sendPoolList(req, res, next);
+						req.sendPoolList(req, res, next,  err ? req.getError(err, "unable to rename pool") : req.getSuccess());
 					})				
 				});
 			}else{
@@ -58,7 +58,7 @@ exports.handle = function(req, res, next){
 				var fsExtra = require("fs.extra");
 				console.log(resourcePath);
 				fsExtra.rmrf(resourcePath, function(err){				
-					req.sendPoolList(req, res, next);
+					req.sendPoolList(req, res, next, err ? req.getError(err, "unable to delete pool") : req.getSuccess());
 				});				
 			});
 			break;

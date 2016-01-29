@@ -17,7 +17,7 @@ exports.handle = function(req, res, next){
 			if(pool){
 				fs.writeFile(pth, "{}", function(err){					
 					fs.mkdir(resPath, function(err){
-						req.sendPoolList(req, res, next);
+						req.sendPoolList(req, res, next, err ? req.getError(err, "unable to create pool") : req.getSuccess());
 					})							
 				});
 			}else{
@@ -31,7 +31,7 @@ exports.handle = function(req, res, next){
 				var newPath = path.join(req.packageFolder, parts.join(path.sep), name);
 				var mv = require("mv");
 				mv(requestedPath, newPath, {mkdirp: true}, function(err){
-					req.sendBranchList(req, res, next);
+					req.sendBranchList(req, res, next, err ? req.getError(err, "unable to rename branch") : req.getSuccess());
 				});
 			}else{
 				req.sendBranchList(req, res, next);
@@ -40,7 +40,7 @@ exports.handle = function(req, res, next){
 		case 'DELETE':			
 			var fsExtra = require("fs.extra");
 			fsExtra.rmrf(requestedPath, function(err){
-				req.sendBranchList(req, res, next);
+				req.sendBranchList(req, res, next, err ? req.getError(err, "unable to delete branch") : req.getSuccess());
 			});
 			break;
 		default:

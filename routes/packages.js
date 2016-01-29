@@ -15,6 +15,18 @@ var checkNames = function(req, res, next){
 	return true;
 }
 
+var getError = function(err, customMessage){
+	if(!customMessage){
+		return err;
+	}else{
+		return {code : 1, message : customMessage, body : err};
+	}
+}
+
+var getSuccess = function(){
+	return {code : 0, message : "success"};
+}
+
 var sendPackageList = function(req, res, next, status){
 	fs.readdir(req.packageFolder, function(err, files){
 		if(!err){
@@ -25,7 +37,7 @@ var sendPackageList = function(req, res, next, status){
 			};					
 			res.json(result);
 		}else{
-			res.json(err);
+			next();
 		}
 	})
 }
@@ -35,12 +47,12 @@ var sendBranchList = function(req, res, next, status){
 		if(!err){
 			var result = {
 				status: status,
-				type: "packages",
+				type: "branches",
 				data: files
 			};					
 			res.json(result);
 		}else{
-			res.json(err);
+			next();
 		}
 	})
 }
@@ -57,7 +69,7 @@ var sendPoolList = function(req, res, next, status){
 			};					
 			res.json(result);
 		}else{
-			res.json(err);
+			next();
 		}
 	})
 }
@@ -75,7 +87,7 @@ var sendCategoryList = function(req, res, next, status){
 			};	
 			res.json(result);					
 		}else{
-			res.json(err);
+			next();
 		}
 	})
 }
@@ -100,7 +112,7 @@ var sendSubCategoryList = function(req, res, next, status){
 				next();
 			}			
 		}else{
-			res.json(err);
+			next();
 		}
 	})
 }
@@ -120,7 +132,7 @@ var sendContentList = function(req, res, next, status){
 				next();
 			}					
 		}else{
-			res.json(err);
+			next();
 		}
 	})
 }
@@ -140,7 +152,7 @@ var sendContent = function(req, res, next, status){
 				next();
 			}						
 		}else{
-			res.json(err);
+			next();
 		}
 	})
 }
@@ -153,6 +165,8 @@ var populateRequest = function(req){
 	req.sendSubCategoryList = sendSubCategoryList;
 	req.sendContentList = sendContentList;
 	req.sendContent = sendContent;
+	req.getError = getError;
+	req.getSuccess = getSuccess;
 }
 
 exports.base = function(req, res, next){	

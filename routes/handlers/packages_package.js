@@ -15,7 +15,7 @@ exports.handle = function(req, res, next){
 			var pth = path.join(req.packageFolder, parts.join(path.sep), branch);
 			if(branch){
 				fs.mkdir(pth, function(err){
-					req.sendBranchList(req, res, next);
+					req.sendBranchList(req, res, next, err ? req.getError(err, "unable to create branch") : req.getSuccess());
 				});
 			}else{
 				req.sendBranchList(req, res, next);
@@ -28,7 +28,7 @@ exports.handle = function(req, res, next){
 				var newPath = path.join(req.packageFolder, parts.join(path.sep), name);
 				var mv = require("mv");
 				mv(requestedPath, newPath, {mkdirp: true}, function(err){
-					req.sendPackageList(req, res, next);
+					req.sendPackageList(req, res, next, err ? req.getError(err, "unable to rename package") : req.getSuccess());
 				});
 			}else{
 				req.sendPackageList(req, res, next);
@@ -37,7 +37,7 @@ exports.handle = function(req, res, next){
 		case 'DELETE':			
 			var fsExtra = require("fs.extra");
 			fsExtra.rmrf(requestedPath, function(err){				
-				req.sendPackageList(req, res, next);
+				req.sendPackageList(req, res, next, err ? req.getError(err, "unable to delete package") : req.getSuccess());
 			});
 			break;
 		default:

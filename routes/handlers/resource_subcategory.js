@@ -24,8 +24,12 @@ exports.handle = function(req, res, next){
 				})
 			}else if(_.has(req.params, "cat") && _.has(req.params, "subcat")){				
 				fs.readFile(pool, "utf8", function(err, data){	
-					var jsonData = JSON.parse(data);			
-					res.json(jsonData[resourceKey]);
+					if(!err){
+						var jsonData = JSON.parse(data);			
+						res.json(jsonData[resourceKey] ? jsonData[resourceKey] : []);
+					}else{
+						res.json(err);
+					}
 				});
 			}else{
 				next();
@@ -39,10 +43,25 @@ exports.handle = function(req, res, next){
 						var handler = new req.PostHandler(path.join(requestedPath, resourceFolder), "", req.files, function(response){
 							if(!_.has(jsonData, resourceKey)){
 								jsonData[resourceKey] = [];
+							}							
+							if(response.length > 0){
+								_.each(response, function(uploadedItem){
+									jsonData[resourceKey].push({file:uploadedItem.newname, name:uploadedItem.name});
+								});
+							}else if(_.has(req.body, "content")){
+								try{
+									var jsonResource = JSON.parse(req.body.content);								
+									if(_.has(jsonResource, "file")){
+										var existing = _.find(jsonData[resourceKey], function(ex){
+											return ex.file == jsonResource.file;
+										});
+										if(!existing){
+											jsonResource["borrowed"] = true;
+											jsonData[resourceKey].push(jsonResource);
+										}
+									}
+								}catch(e){}
 							}
-							_.each(response, function(uploadedItem){
-								jsonData[resourceKey].push({file:uploadedItem.newname, name:uploadedItem.name});
-							});
 							fs.writeFile(pool, JSON.stringify(jsonData), function(err){
 								if(!err){
 									res.json(jsonData[resourceKey]);	
@@ -64,19 +83,23 @@ exports.handle = function(req, res, next){
 			fs.readFile(pool, "utf8", function(err, data){
 				if(!err){					
 					var jsonData = JSON.parse(data);					
-					if(_.has(jsonData, resourceKey))	{						
-						fs.unlink(path.join(requestedPath, resourceFolder, req.params.id), function(err){
-							jsonData[resourceKey] = _.reject(jsonData[resourceKey], function(f){
-								return req.params.id == f.file;
-							});
-							fs.writeFile(pool, JSON.stringify(jsonData), function(err){
-								if(!err){
-									res.json(jsonData[resourceKey]);	
-								}else{
-									res.json(err);	
+					if(_.has(jsonData, resourceKey)){	
+						var deleted = _.find(jsonData[resourceKey], function(d){
+							return d.file == req.params.id;
+						});
+						jsonData[resourceKey] = _.reject(jsonData[resourceKey], function(f){
+							return req.params.id == f.file;
+						});
+						fs.writeFile(pool, JSON.stringify(jsonData), function(err){
+							if(!err){
+								res.json(jsonData[resourceKey]);	
+								if(deleted && !_.has(deleted, "borrowed")){
+									fs.unlink(path.join(requestedPath, resourceFolder, req.params.id), function(err){});
 								}
-							})
-						})						
+							}else{
+								res.json(err);	
+							}
+						})												
 					}else{
 						next();
 					}				
