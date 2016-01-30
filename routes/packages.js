@@ -2,9 +2,12 @@ var fs = require("fs");
 var path = require("path");
 var _ = require("underscore");
 
-var checkNames = function(req, res, next){		
-	if(req.method == 'POST' || req.method == 'PUT'){
-		var name = req.body.name.toLowerCase();
+var checkNames = function(req, res, next, methods){		
+	if(methods.indexOf(req.method) > -1){
+		var name = "";
+		try{
+			name = req.body.name.toLowerCase();
+		}catch(e){}
 		if(name.indexOf('$') > -1){
 			var result = { status: 0}	
 			result.message = "$ sign not allowed";
@@ -169,28 +172,36 @@ var populateRequest = function(req){
 	req.getSuccess = getSuccess;
 }
 
-exports.base = function(req, res, next){	
-	var handler = require(__dirname + "/handlers/packages_base");
-	populateRequest(req);
-	handler.handle(req, res, next);	
+exports.base = function(req, res, next){		
+	var methods = ['PUT'];
+	if(checkNames(req, res, next, methods)){
+		var handler = require(__dirname + "/handlers/packages_base");
+		populateRequest(req);
+		handler.handle(req, res, next);	
+	}
 }
 
-exports.package = function(req, res, next){		
-	var handler = require(__dirname + "/handlers/packages_package");	
-	populateRequest(req);
-	handler.handle(req, res, next);	
+exports.package = function(req, res, next){			
+	var methods = ['PUT','POST'];	
+	if(checkNames(req, res, next, methods)){
+		var handler = require(__dirname + "/handlers/packages_package");
+		populateRequest(req);
+		handler.handle(req, res, next);	
+	}	
 }
 
-exports.branch = function(req, res, next){		
-	if(checkNames(req, res, next)){
+exports.branch = function(req, res, next){	
+	var methods = ['PUT','POST'];		
+	if(checkNames(req, res, next, methods)){
 		var handler = require(__dirname + "/handlers/packages_branch");	
 		populateRequest(req);
 		handler.handle(req, res, next);	
 	}
 }
 
-exports.pool = function(req, res, next){	
-	if(checkNames(req, res, next)){
+exports.pool = function(req, res, next){
+	var methods = ['PUT','POST'];		
+	if(checkNames(req, res, next, methods)){
 		var handler = require(__dirname + "/handlers/packages_pool");	
 		populateRequest(req);
 		handler.handle(req, res, next);	
@@ -198,7 +209,8 @@ exports.pool = function(req, res, next){
 }
 
 exports.category = function(req, res, next){
-	if(checkNames(req, res, next)){
+	var methods = ['PUT','POST'];	
+	if(checkNames(req, res, next, methods)){
 		var handler = require(__dirname + "/handlers/packages_category");	
 		populateRequest(req);
 		handler.handle(req, res, next);	
@@ -206,7 +218,8 @@ exports.category = function(req, res, next){
 }
 
 exports.subcategory = function(req, res, next){
-	if(checkNames(req, res, next)){
+	var methods = ['POST'];	
+	if(checkNames(req, res, next, methods)){
 		var handler = require(__dirname + "/handlers/packages_subcategory");	
 		populateRequest(req);
 		handler.handle(req, res, next);	

@@ -37,7 +37,9 @@ exports.handle = function(req, res, next){
 		case 'DELETE':			
 			var fsExtra = require("fs.extra");
 			fsExtra.rmrf(requestedPath, function(err){				
-				req.sendPackageList(req, res, next, err ? req.getError(err, "unable to delete package") : req.getSuccess());
+				setTimeout(function(){
+					req.sendPackageList(req, res, next, err ? req.getError(err, "unable to delete package") : req.getSuccess());
+				}, 1000);
 			});
 			break;
 		default:

@@ -11,7 +11,7 @@ exports.handle = function(req, res, next){
 			var pkg = req.body.name.toLowerCase();
 			var pth = path.join(req.packageFolder, pkg);
 			fs.mkdir(pth, function(err){
-				req.sendPackageList(req, res, next);
+				req.sendPackageList(req, res, next, err ? req.getError(err, "unable to create package") : req.getSuccess());
 			});
 			break;
 		default:
