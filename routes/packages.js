@@ -7,11 +7,16 @@ var checkNames = function(req, res, next, methods){
 		var name = "";
 		try{
 			name = req.body.name.toLowerCase();
-		}catch(e){}
+		}catch(e){
+			var result = { code: 1}
+			result.message = "no name parameter supplied";
+			res.json({status : result});
+			return false;
+		}
 		if(name.indexOf('$') > -1){
-			var result = { status: 0}	
+			var result = { code: 1}	
 			result.message = "$ sign not allowed";
-			res.json(result);
+			res.json({status : result});
 			return false;
 		}
 	}
